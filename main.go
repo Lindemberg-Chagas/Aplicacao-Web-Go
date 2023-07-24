@@ -1,17 +1,43 @@
 package main
 
 import (
+	"database/sql"
 	"html/template"
 	"net/http"
+
+	_ "github.com/lib/pq"
 )
 
-var temp = template.Must(template.ParseGlob("templates/*.html")) //var para indicar o caminho das Templates//
+type Produto struct {
+	Nome, Descricao string
+	Preco           float64
+	Quantidade      int
+}
 
-func main() { // criar um server para aplicação web na porta 8000 //
-	http.HandleFunc("/", index) // "/" - caminho que voce quer atender, Index - quem vai atender ? No caso uma func Index irá atender//
+func conectaBancoDeDados() *sql.DB {
+	conexao := "user=postgres, dbname=db_loja, senha=310885, host=localhost, sslmode=disable"
+	db, err := sql.Open("postgres", conexao)
+	if err != nil {
+		panic(err.Error())
+	}
+	return db
+}
+
+var temp = template.Must(template.ParseGlob("templates/*.html"))
+
+func main() {
+	db := conectaBancoDeDados()
+	defer db.Close()
+	http.HandleFunc("/", index)
 	http.ListenAndServe(":8000", nil)
 
 }
 func index(w http.ResponseWriter, r *http.Request) {
-	temp.ExecuteTemplate(w, "Index", nil)
-} // ResponsWriter - quem vai ler a requisição, Request - A requisição //
+	produtos := []Produto{
+		{"Camisa", "Bem Colorida", 59.90, 5},
+		{"Meia", "Branca", 19.90, 10},
+		{"Sapato", "Social Preto", 30.00, 2},
+	}
+
+	temp.ExecuteTemplate(w, "Index", produtos)
+}
